@@ -49,6 +49,7 @@ set(msg_files
 	Airspeed.msg
 	AirspeedValidated.msg
 	AirspeedWind.msg
+	AntPulse.msg
 	ArmingCheckReply.msg
 	ArmingCheckRequest.msg
 	AutotuneAttitudeControlStatus.msg

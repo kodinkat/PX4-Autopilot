@@ -108,3 +108,8 @@ src/systemcmds/topic_listener/listener_generated.cpp
 
 # colcon
 log/
+
+# VSCode Ignores
+.vscode
+.vscode/*.*
+.vscode/settings.json

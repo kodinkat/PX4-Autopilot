@@ -1,0 +1,5 @@
+menuconfig MODULES_ANT_PULSE
+	bool "ant_pulse"
+	default n
+	---help---
+		Enable support for ant_pulse

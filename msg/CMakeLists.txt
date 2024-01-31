@@ -49,7 +49,28 @@ set(msg_files
 	Airspeed.msg
 	AirspeedValidated.msg
 	AirspeedWind.msg
+	AntActions.msg
+	AntActuators.msg
+	AntAirspeeds.msg
+	AntArming.msg
+	AntBattery.msg
+	AntCamera.msg
+	AntCellular.msg
+	AntCollisions.msg
+	AntCpu.msg
+	AntDistances.msg
+	AntEsc.msg
+	AntEstimators.msg
+	AntFailures.msg
+	AntHealth.msg
+	AntHovering.msg
+	AntLanding.msg
+	AntLights.msg
+	AntLogs.msg
+	AntPower.msg
 	AntPulse.msg
+	AntRadio.msg
+	AntSensors.msg
 	ArmingCheckReply.msg
 	ArmingCheckRequest.msg
 	AutotuneAttitudeControlStatus.msg

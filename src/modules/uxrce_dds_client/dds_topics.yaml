@@ -74,6 +74,72 @@ publications:
   - topic: /fmu/out/vehicle_trajectory_waypoint_desired
     type: px4_msgs::msg::VehicleTrajectoryWaypoint
 
+  - topic: /fmu/out/ant_actions
+    type: kolony_px4_ros2_interfaces::msg::AntActions
+
+  - topic: /fmu/out/ant_actuators
+    type: kolony_px4_ros2_interfaces::msg::AntActuators
+
+  - topic: /fmu/out/ant_airspeeds
+    type: kolony_px4_ros2_interfaces::msg::AntAirspeeds
+
+  - topic: /fmu/out/ant_arming
+    type: kolony_px4_ros2_interfaces::msg::AntArming
+
+  - topic: /fmu/out/ant_battery
+    type: kolony_px4_ros2_interfaces::msg::AntBattery
+
+  - topic: /fmu/out/ant_camera
+    type: kolony_px4_ros2_interfaces::msg::AntCamera
+
+  - topic: /fmu/out/ant_cellular
+    type: kolony_px4_ros2_interfaces::msg::AntCellular
+
+  - topic: /fmu/out/ant_collisions
+    type: kolony_px4_ros2_interfaces::msg::AntCollisions
+
+  - topic: /fmu/out/ant_cpu
+    type: kolony_px4_ros2_interfaces::msg::AntCpu
+
+  - topic: /fmu/out/ant_distances
+    type: kolony_px4_ros2_interfaces::msg::AntDistances
+
+  - topic: /fmu/out/ant_esc
+    type: kolony_px4_ros2_interfaces::msg::AntEsc
+
+  - topic: /fmu/out/ant_estimators
+    type: kolony_px4_ros2_interfaces::msg::AntEstimators
+
+  - topic: /fmu/out/ant_failures
+    type: kolony_px4_ros2_interfaces::msg::AntFailures
+
+  - topic: /fmu/out/ant_health
+    type: kolony_px4_ros2_interfaces::msg::AntHealth
+
+  - topic: /fmu/out/ant_hovering
+    type: kolony_px4_ros2_interfaces::msg::AntHovering
+
+  - topic: /fmu/out/ant_landing
+    type: kolony_px4_ros2_interfaces::msg::AntLanding
+
+  - topic: /fmu/out/ant_lights
+    type: kolony_px4_ros2_interfaces::msg::AntLights
+
+  - topic: /fmu/out/ant_logs
+    type: kolony_px4_ros2_interfaces::msg::AntLogs
+
+  - topic: /fmu/out/ant_power
+    type: kolony_px4_ros2_interfaces::msg::AntPower
+
+  - topic: /fmu/out/ant_pulse
+    type: kolony_px4_ros2_interfaces::msg::AntPulse
+
+  - topic: /fmu/out/ant_radio
+    type: kolony_px4_ros2_interfaces::msg::AntRadio
+
+  - topic: /fmu/out/ant_sensors
+    type: kolony_px4_ros2_interfaces::msg::AntSensors
+
 # Create uORB::Publication
 subscriptions:
   - topic: /fmu/in/register_ext_component_request

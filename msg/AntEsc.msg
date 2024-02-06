@@ -28,7 +28,7 @@ uint8 es_esc_online_flags
 
 uint8 es_esc_armed_flags					# Bitmask indicating which ESC is armed. For ESC's where the arming state is not known (returned by the ESC), the arming bits should always be set.
 
-EscReport[8] es_esc
+# EscReport[8] es_esc
 
 
 # TOPICS ant_esc

@@ -602,7 +602,7 @@ void AntPulse::run()
 				ant_esc.es_esc_connectiontype = esc_status_data.esc_connectiontype;
 				ant_esc.es_esc_online_flags = esc_status_data.esc_online_flags;
 				ant_esc.es_esc_armed_flags = esc_status_data.esc_armed_flags;
-				std::copy(std::begin(esc_status_data.esc), std::end(esc_status_data.esc), std::begin(ant_esc.es_esc));
+				//std::copy(std::begin(esc_status_data.esc), std::end(esc_status_data.esc), std::begin(ant_esc.es_esc));
 			} else {
 				ant_esc.has_esc_status = false;
 			}

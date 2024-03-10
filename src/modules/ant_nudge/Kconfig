@@ -1,0 +1,5 @@
+menuconfig MODULES_ANT_NUDGE
+	bool "ant_nudge"
+	default n
+	---help---
+		Enable support for ant_nudge

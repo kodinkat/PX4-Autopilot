@@ -67,6 +67,7 @@ set(msg_files
 	AntLanding.msg
 	AntLights.msg
 	AntLogs.msg
+	AntNudge.msg
 	AntPower.msg
 	AntPulse.msg
 	AntRadio.msg

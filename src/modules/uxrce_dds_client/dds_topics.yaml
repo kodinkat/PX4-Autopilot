@@ -226,5 +226,8 @@ subscriptions:
   - topic: /fmu/in/aux_global_position
     type: px4_msgs::msg::VehicleGlobalPosition
 
+  - topic: /fmu/in/ant_nudge
+    type: kolony_px4_ros2_interfaces::msg::AntNudge
+
 # Create uORB::PublicationMulti
 subscriptions_multi:

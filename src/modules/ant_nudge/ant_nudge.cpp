@@ -65,6 +65,7 @@ int AntNudge::task_spawn(int argc, char *argv[])
 
 AntNudge *AntNudge::instantiate(int argc, char *argv[])
 {
+	PX4_INFO("Instantiated....!");
 	int example_param = 0;
 	bool example_flag = false;
 	bool error_flag = false;
@@ -115,50 +116,250 @@ AntNudge::AntNudge(int example_param, bool example_flag)
 
 void AntNudge::run()
 {
-	// Subscribe to the various orb topics of interest.
-	// -> https://docs.px4.io/main/en/modules/hello_sky.html
-
-	int ant_nudge_sub = orb_subscribe(ORB_ID(ant_nudge));
-
-	px4_pollfd_struct_t fds[] = {
-		/*[0]*/ { .fd = ant_nudge_sub, .events = POLLIN }
-	};
+	PX4_INFO("Run() Loop....!");
 
 	// initialize parameters
 	parameters_update(true);
 
+	int ant_system_id = 12345;
+	long unsigned int last_nudge_system_id = -1;
+
 	while (!should_exit()) {
 
-		// wait for up to 1000ms for data
-		int pret = px4_poll(fds, (sizeof(fds) / sizeof(fds[0])), 1000);
+		// Capture ant's current state.
+		uORB::SubscriptionData<vehicle_status_s> vehicle_status_sub { ORB_ID(vehicle_status) };
 
-		if (pret == 0) {
-			// Timeout: let the loop run anyway, don't do `continue` here
+		PX4_INFO("-- Vehicle Status Detected --");
+		PX4_INFO("nav_state: %li", (long unsigned int) vehicle_status_sub.get().nav_state);
+		PX4_INFO("nav_state_user_intention: %li", (long unsigned int) vehicle_status_sub.get().nav_state_user_intention);
+		PX4_INFO("-----------------------------");
 
-		} else if (pret < 0) {
-			// this is undesirable but not much we can do
-			PX4_ERR("poll error %d, %d", pret, errno);
-			px4_usleep(50000);
-			continue;
+		// Capture ant's current local positioning.
+		uORB::SubscriptionData<vehicle_local_position_s> vehicle_local_position_sub { ORB_ID(vehicle_local_position) };
 
-		} else {
+		PX4_INFO("-- Vehicle Local Position Detected --");
+		PX4_INFO("x: %f", (double)vehicle_local_position_sub.get().x);
+		PX4_INFO("y: %f", (double)vehicle_local_position_sub.get().y);
+		PX4_INFO("z: %f", (double)vehicle_local_position_sub.get().z);
+		PX4_INFO("dist_bottom: %f", (double)vehicle_local_position_sub.get().dist_bottom);
+		PX4_INFO("heading: %f", (double)vehicle_local_position_sub.get().heading);
+		PX4_INFO("-----------------------------");
 
-			// ant_nudge
-			if (fds[0].revents & POLLIN) {
-				struct ant_nudge_s ant_nudge_data;
-				orb_copy(ORB_ID(ant_nudge), ant_nudge_sub, &ant_nudge_data);
+		// Capture ant's landing state.
+		uORB::SubscriptionData<vehicle_land_detected_s> vehicle_land_detected_sub { ORB_ID(vehicle_land_detected) };
 
-				PX4_INFO("-- Ant Nudge --");
-				//PX4_INFO("%d", ant_nudge_data.timestamp);
-				//PX4_INFO("%d", ant_nudge_data.ant_id);
+		PX4_INFO("-- Vehicle Land Detected --");
+		PX4_INFO("freefall: %i", (bool) vehicle_land_detected_sub.get().freefall);
+		PX4_INFO("ground_contact: %i", (bool) vehicle_land_detected_sub.get().ground_contact);
+		PX4_INFO("maybe_landed: %i", (bool) vehicle_land_detected_sub.get().maybe_landed);
+		PX4_INFO("landed: %i", (bool) vehicle_land_detected_sub.get().landed);
+		PX4_INFO("in_ground_effect: %i", (bool) vehicle_land_detected_sub.get().in_ground_effect);
+		PX4_INFO("in_descend: %i", (bool) vehicle_land_detected_sub.get().in_descend);
+		PX4_INFO("has_low_throttle: %i", (bool) vehicle_land_detected_sub.get().has_low_throttle);
+		PX4_INFO("vertical_movement: %i", (bool) vehicle_land_detected_sub.get().vertical_movement);
+		PX4_INFO("horizontal_movement: %i", (bool) vehicle_land_detected_sub.get().horizontal_movement);
+		PX4_INFO("close_to_ground_or_skipped_check: %i", (bool) vehicle_land_detected_sub.get().close_to_ground_or_skipped_check);
+		PX4_INFO("at_rest: %i", (bool) vehicle_land_detected_sub.get().at_rest);
+		PX4_INFO("-----------------------------");
+
+		// Fetch any available incoming nudges.
+		uORB::SubscriptionData<ant_nudge_s> ant_nudge_sub { ORB_ID(ant_nudge) };
+
+		PX4_INFO("-- Ant Nudge Detected --");
+		PX4_INFO("ant_system_id: %li", (long unsigned int) ant_nudge_sub.get().ant_system_id);
+		PX4_INFO("nudge_system_id: %li", (long unsigned int) ant_nudge_sub.get().nudge_system_id);
+		PX4_INFO("last_nudge_system_id: %li", (long unsigned int) last_nudge_system_id);
+		PX4_INFO("-----------------------------");
+
+		// Ensure detected nudge is valid and for current ant and has not been previously processed.
+		if ( ( ant_nudge_sub.get().ant_system_id == ant_system_id ) && ( ant_nudge_sub.get().nudge_system_id != last_nudge_system_id ) ) {
+
+			PX4_INFO("-- Nudge Nav Type Detected --");
+
+			// Update last nudge system id reference.
+			last_nudge_system_id = ant_nudge_sub.get().nudge_system_id;
+
+			// Determine nudge operation to be carried out.
+			bool result = false;
+			int nudge_nav_type = ant_nudge_sub.get().nudge_nav_type;
+			switch (nudge_nav_type)
+			{
+				case ant_nudge_s::NUDGE_NAV_TYPE_ARM : {
+					result = arm();
+				}
+				break;
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_DISARM : {
+					result = disarm();
+				}
+				break;
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_TAKEOFF : {
+					result = takeoff(ant_nudge_sub.get().nnt_takeoff_altitude);
+				}
+				break;
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_LAND :
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_TURN_RIGHT :
+				case ant_nudge_s::NUDGE_NAV_TYPE_TURN_LEFT :
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_FORWARD :
+				case ant_nudge_s::NUDGE_NAV_TYPE_BACKWARD :
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_UP :
+				case ant_nudge_s::NUDGE_NAV_TYPE_DOWN :
+
+				case ant_nudge_s::NUDGE_NAV_TYPE_RIGHT :
+				case ant_nudge_s::NUDGE_NAV_TYPE_LEFT : {
+
+					// Ensure ant is currently in offboard mode.
+					bool offboard_mode_enabled = true;
+					if ( vehicle_status_sub.get().nav_state_user_intention != vehicle_status_s::NAVIGATION_STATE_OFFBOARD ) {
+						offboard_mode_enabled = send_vehicle_command(vehicle_command_s::VEHICLE_CMD_DO_SET_MODE, 1, 6);
+					}
+
+					PX4_INFO("offboard_mode_enabled: %i", offboard_mode_enabled);
+
+					// If offboard enabled, execute right turn.
+					if ( offboard_mode_enabled ) {
+
+						for (int i = 0; i <= 20; i++) {
+
+							// Set offboard control mode, to that of position.
+							offboard_control_mode_s ocm {};
+							ocm.position = true;
+							ocm.velocity = false;
+							ocm.acceleration = false;
+							ocm.attitude = false;
+							ocm.body_rate = false;
+							ocm.timestamp = hrt_absolute_time();
+
+							uORB::Publication<offboard_control_mode_s> ocm_pub { ORB_ID(offboard_control_mode) };
+							ocm_pub.publish(ocm);
+
+							trajectory_setpoint_s ts {};
+							ts.timestamp = hrt_absolute_time();
+
+							if ( ant_nudge_s::NUDGE_NAV_TYPE_LAND == nudge_nav_type ) {
+
+								PX4_INFO("-- Landing --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = 0;
+								ts.yaw = 0;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_TURN_RIGHT == nudge_nav_type ) {
+
+								PX4_INFO("-- Turning Right --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = vehicle_local_position_sub.get().z;
+								ts.yaw = vehicle_local_position_sub.get().heading + ant_nudge_sub.get().nnt_turn_right_radians;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_TURN_LEFT == nudge_nav_type ) {
+
+								PX4_INFO("-- Turning Left --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = vehicle_local_position_sub.get().z;
+								ts.yaw = vehicle_local_position_sub.get().heading - ant_nudge_sub.get().nnt_turn_left_radians;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_FORWARD == nudge_nav_type ) {
+
+								PX4_INFO("-- Forward --");
+
+								ts.position[0] = (vehicle_local_position_sub.get().x + ant_nudge_sub.get().nnt_forward_distance) * cos(vehicle_local_position_sub.get().heading);
+								ts.position[1] = (vehicle_local_position_sub.get().y + ant_nudge_sub.get().nnt_forward_distance) * sin(vehicle_local_position_sub.get().heading);
+								ts.position[2] = vehicle_local_position_sub.get().z;
+								ts.yaw = vehicle_local_position_sub.get().heading;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_BACKWARD == nudge_nav_type ) {
+
+								PX4_INFO("-- Backward --");
+
+								ts.position[0] = (vehicle_local_position_sub.get().x - ant_nudge_sub.get().nnt_backward_distance) * cos(vehicle_local_position_sub.get().heading);
+								ts.position[1] = (vehicle_local_position_sub.get().y - ant_nudge_sub.get().nnt_backward_distance) * sin(vehicle_local_position_sub.get().heading);
+								ts.position[2] = vehicle_local_position_sub.get().z;
+								ts.yaw = vehicle_local_position_sub.get().heading;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_UP == nudge_nav_type ) {
+
+								PX4_INFO("-- Up --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = vehicle_local_position_sub.get().z - ant_nudge_sub.get().nnt_up_distance;
+								ts.yaw = vehicle_local_position_sub.get().heading;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_DOWN == nudge_nav_type ) {
+
+								PX4_INFO("-- Down --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = vehicle_local_position_sub.get().z + ant_nudge_sub.get().nnt_down_distance;
+								ts.yaw = vehicle_local_position_sub.get().heading;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_RIGHT == nudge_nav_type ) {
+
+								PX4_INFO("-- Right --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x - ant_nudge_sub.get().nnt_right_distance;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = vehicle_local_position_sub.get().z;
+								ts.yaw = vehicle_local_position_sub.get().heading;
+
+							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_LEFT == nudge_nav_type ) {
+
+								PX4_INFO("-- Left --");
+
+								ts.position[0] = vehicle_local_position_sub.get().x + ant_nudge_sub.get().nnt_left_distance;
+								ts.position[1] = vehicle_local_position_sub.get().y;
+								ts.position[2] = vehicle_local_position_sub.get().z;
+								ts.yaw = vehicle_local_position_sub.get().heading;
+							}
+
+							uORB::Publication<trajectory_setpoint_s> ts_pub { ORB_ID(trajectory_setpoint) };
+							result = ts_pub.publish(ts);
+
+							px4_usleep(1000);
+						}
+
+						// Revert back to a loitering state.
+						send_vehicle_command(vehicle_command_s::VEHICLE_CMD_DO_SET_MODE, 1, 4, 3);
+
+					} else {
+						// TODO: Nudge Response.
+					}
+				}
+				break;
+
+				default:
+				break;
 			}
+
+			PX4_INFO("nudge_result: %i", result);
+
 		}
+
+		// Find latest command acknowledgements.
+		uORB::SubscriptionData<vehicle_command_ack_s> vehicle_command_ack_sub { ORB_ID(vehicle_command_ack) };
+
+		PX4_INFO("-- Vehicle Command Ack --");
+		PX4_INFO("%li", (long unsigned int) vehicle_command_ack_sub.get().command);
+		PX4_INFO("%li", (long unsigned int) vehicle_command_ack_sub.get().result);
+		PX4_INFO("%li", (long unsigned int) vehicle_command_ack_sub.get().result_param1);
+		PX4_INFO("%li", (long unsigned int) vehicle_command_ack_sub.get().result_param2);
+
+		// Power nap real quick for a sec...!
+		px4_sleep(1);
 
 		parameters_update();
 	}
-
-	// Unsubscribe from various PX4 uORB topics.
-	orb_unsubscribe(ant_nudge_sub);
 }
 
 void AntNudge::parameters_update(bool force)
@@ -207,5 +408,6 @@ $ module start -f -p 42
 
 int ant_nudge_main(int argc, char *argv[])
 {
+	PX4_INFO("Ant Nudges Started!");
 	return AntNudge::main(argc, argv);
 }

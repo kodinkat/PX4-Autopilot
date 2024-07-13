@@ -446,9 +446,9 @@ void AntPulse::run()
 				ant_battery.has_battery_status = true;
 				ant_battery.bs_connected = battery_status_data.connected;
 				ant_battery.bs_voltage_v = battery_status_data.voltage_v;
-				ant_battery.bs_voltage_filtered_v = battery_status_data.voltage_filtered_v;
+				//ant_battery.bs_voltage_filtered_v = battery_status_data.voltage_filtered_v;
 				ant_battery.bs_current_a = battery_status_data.current_a;
-				ant_battery.bs_current_filtered_a = battery_status_data.current_filtered_a;
+				//ant_battery.bs_current_filtered_a = battery_status_data.current_filtered_a;
 				ant_battery.bs_current_average_a = battery_status_data.current_average_a;
 				ant_battery.bs_discharged_mah = battery_status_data.discharged_mah;
 				ant_battery.bs_remaining = battery_status_data.remaining;
@@ -473,12 +473,12 @@ void AntPulse::run()
 				ant_battery.bs_custom_faults = battery_status_data.custom_faults;
 				ant_battery.bs_warning = battery_status_data.warning;
 				ant_battery.bs_mode = battery_status_data.mode;
-				ant_battery.bs_average_power = battery_status_data.average_power;
-				ant_battery.bs_available_energy = battery_status_data.available_energy;
+				//ant_battery.bs_average_power = battery_status_data.average_power;
+				//ant_battery.bs_available_energy = battery_status_data.available_energy;
 				ant_battery.bs_full_charge_capacity_wh = battery_status_data.full_charge_capacity_wh;
 				ant_battery.bs_remaining_capacity_wh = battery_status_data.remaining_capacity_wh;
-				ant_battery.bs_design_capacity = battery_status_data.design_capacity;
-				ant_battery.bs_average_time_to_full = battery_status_data.average_time_to_full;
+				//ant_battery.bs_design_capacity = battery_status_data.design_capacity;
+				//ant_battery.bs_average_time_to_full = battery_status_data.average_time_to_full;
 				ant_battery.bs_over_discharge_count = battery_status_data.over_discharge_count;
 				ant_battery.bs_nominal_voltage = battery_status_data.nominal_voltage;
 			} else {
@@ -617,7 +617,7 @@ void AntPulse::run()
 				ant_estimators.ei_rng_vpos = estimator_innovations_data.rng_vpos;
 				ant_estimators.ei_baro_vpos = estimator_innovations_data.baro_vpos;
 				std::copy(std::begin(estimator_innovations_data.flow), std::end(estimator_innovations_data.flow), std::begin(ant_estimators.ei_flow));
-				std::copy(std::begin(estimator_innovations_data.terr_flow), std::end(estimator_innovations_data.terr_flow), std::begin(ant_estimators.ei_terr_flow));
+				//std::copy(std::begin(estimator_innovations_data.terr_flow), std::end(estimator_innovations_data.terr_flow), std::begin(ant_estimators.ei_terr_flow));
 				ant_estimators.ei_heading = estimator_innovations_data.heading;
 				std::copy(std::begin(estimator_innovations_data.mag_field), std::end(estimator_innovations_data.mag_field), std::begin(ant_estimators.ei_mag_field));
 				std::copy(std::begin(estimator_innovations_data.gravity), std::end(estimator_innovations_data.gravity), std::begin(ant_estimators.ei_gravity));

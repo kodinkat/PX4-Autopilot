@@ -470,9 +470,9 @@ void AntPulse::run()
 				ant_battery.bs_max_cell_voltage_delta = battery_status_data.max_cell_voltage_delta;
 				ant_battery.bs_is_powering_off = battery_status_data.is_powering_off;
 				ant_battery.bs_faults = battery_status_data.faults;
-				ant_battery.bs_custom_faults = battery_status_data.custom_faults;
+				//ant_battery.bs_custom_faults = battery_status_data.custom_faults;
 				ant_battery.bs_warning = battery_status_data.warning;
-				ant_battery.bs_mode = battery_status_data.mode;
+				//ant_battery.bs_mode = battery_status_data.mode;
 				//ant_battery.bs_average_power = battery_status_data.average_power;
 				//ant_battery.bs_available_energy = battery_status_data.available_energy;
 				ant_battery.bs_full_charge_capacity_wh = battery_status_data.full_charge_capacity_wh;

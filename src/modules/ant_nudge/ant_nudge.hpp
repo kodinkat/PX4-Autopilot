@@ -47,6 +47,7 @@
 #include <uORB/SubscriptionInterval.hpp>
 
 #include <uORB/topics/ant_nudge.h>
+#include <uORB/topics/ant_nudge_ack.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_command_ack.h>
 #include <uORB/topics/vehicle_status.h>

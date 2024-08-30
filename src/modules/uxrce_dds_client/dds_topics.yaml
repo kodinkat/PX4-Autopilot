@@ -140,6 +140,12 @@ publications:
   - topic: /fmu/out/ant_sensors
     type: kolony_px4_ros2_interfaces::msg::AntSensors
 
+  - topic: /fmu/out/ant_nudge_ack
+    type: kolony_px4_ros2_interfaces::msg::AntNudgeAck
+
+  - topic: /fmu/out/ant_vehicle_local_position
+    type: kolony_px4_ros2_interfaces::msg::AntVehicleLocalPosition
+
 # Create uORB::Publication
 subscriptions:
   - topic: /fmu/in/register_ext_component_request

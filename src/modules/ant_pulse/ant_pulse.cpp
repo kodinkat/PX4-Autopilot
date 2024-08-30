@@ -152,6 +152,7 @@ void AntPulse::run()
 	struct ant_pulse_s ant_pulse;
 	struct ant_radio_s ant_radio;
 	struct ant_sensors_s ant_sensors;
+	struct ant_vehicle_local_position_s ant_vehicle_local_position;
 
 	memset(&ant_actions, 0, sizeof(ant_actions));
 	memset(&ant_actuators, 0, sizeof(ant_actuators));
@@ -175,6 +176,7 @@ void AntPulse::run()
 	memset(&ant_pulse, 0, sizeof(ant_pulse));
 	memset(&ant_radio, 0, sizeof(ant_radio));
 	memset(&ant_sensors, 0, sizeof(ant_sensors));
+	memset(&ant_vehicle_local_position, 0, sizeof(ant_vehicle_local_position));
 
 	int ant_system_id = 12345;
 	ant_actions.ant_system_id = ant_system_id;
@@ -199,6 +201,7 @@ void AntPulse::run()
 	ant_pulse.ant_system_id = ant_system_id;
 	ant_radio.ant_system_id = ant_system_id;
 	ant_sensors.ant_system_id = ant_system_id;
+	ant_vehicle_local_position.ant_system_id = ant_system_id;
 
 	orb_advert_t ant_actions_pub = orb_advertise(ORB_ID(ant_actions), &ant_actions);
 	orb_advert_t ant_actuators_pub = orb_advertise(ORB_ID(ant_actuators), &ant_actuators);
@@ -222,6 +225,7 @@ void AntPulse::run()
 	orb_advert_t ant_pulse_pub = orb_advertise(ORB_ID(ant_pulse), &ant_pulse);
 	orb_advert_t ant_radio_pub = orb_advertise(ORB_ID(ant_radio), &ant_radio);
 	orb_advert_t ant_sensors_pub = orb_advertise(ORB_ID(ant_sensors), &ant_sensors);
+	orb_advert_t ant_vehicle_local_position_pub = orb_advertise(ORB_ID(ant_vehicle_local_position), &ant_vehicle_local_position);
 
 	// Subscribe to the various orb topics of interest.
 	// -> https://docs.px4.io/main/en/modules/hello_sky.html
@@ -266,6 +270,7 @@ void AntPulse::run()
 	int takeoff_status_sub = orb_subscribe(ORB_ID(takeoff_status));
 	int vehicle_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
 	int wind_sub = orb_subscribe(ORB_ID(wind));
+	int vehicle_local_position_sub = orb_subscribe(ORB_ID(vehicle_local_position));
 
 	px4_pollfd_struct_t fds[] = {
 		/*[0]*/ { .fd = action_request_sub, .events = POLLIN },
@@ -307,7 +312,8 @@ void AntPulse::run()
 		/*[36]*/ { .fd = system_power_sub, .events = POLLIN },
 		/*[37]*/ { .fd = takeoff_status_sub, .events = POLLIN },
 		/*[38]*/ { .fd = vehicle_land_detected_sub, .events = POLLIN },
-		/*[39]*/ { .fd = wind_sub, .events = POLLIN }
+		/*[39]*/ { .fd = wind_sub, .events = POLLIN },
+		/*[40]*/ { .fd = vehicle_local_position_sub, .events = POLLIN }
 	};
 
 	// initialize parameters
@@ -1030,6 +1036,22 @@ void AntPulse::run()
 				ant_airspeeds.has_wind = false;
 			}
 
+			// vehicle_local_position
+			if (fds[40].revents & POLLIN) {
+				struct vehicle_local_position_s vehicle_local_position_data;
+				orb_copy(ORB_ID(vehicle_local_position), vehicle_local_position_sub, &vehicle_local_position_data);
+
+				ant_vehicle_local_position.timestamp = hrt_absolute_time();
+				ant_vehicle_local_position.has_vehicle_local_position = true;
+				ant_vehicle_local_position.x = vehicle_local_position_data.x;
+				ant_vehicle_local_position.y = vehicle_local_position_data.y;
+				ant_vehicle_local_position.z = vehicle_local_position_data.z;
+				ant_vehicle_local_position.heading = vehicle_local_position_data.heading;
+				ant_vehicle_local_position.dist_bottom = vehicle_local_position_data.dist_bottom;
+			} else {
+				ant_vehicle_local_position.has_vehicle_local_position = false;
+			}
+
 			// Always publish ant pulse.
 			orb_publish(ORB_ID(ant_pulse), ant_pulse_pub, &ant_pulse);
 
@@ -1117,6 +1139,10 @@ void AntPulse::run()
 			if (ant_sensors.has_sensor_accel || ant_sensors.has_sensor_baro || ant_sensors.has_sensor_gyro || ant_sensors.has_sensor_hygrometer || ant_sensors.has_sensor_mag || ant_sensors.has_sensor_optical_flow) {
 				orb_publish(ORB_ID(ant_sensors), ant_sensors_pub, &ant_sensors);
 			}
+
+			if (ant_vehicle_local_position.has_vehicle_local_position) {
+				orb_publish(ORB_ID(ant_vehicle_local_position), ant_vehicle_local_position_pub, &ant_vehicle_local_position);
+			}
 		}
 
 		parameters_update();
@@ -1163,6 +1189,7 @@ void AntPulse::run()
 	orb_unsubscribe(takeoff_status_sub);
 	orb_unsubscribe(vehicle_land_detected_sub);
 	orb_unsubscribe(wind_sub);
+	orb_unsubscribe(vehicle_local_position_sub);
 }
 
 void AntPulse::parameters_update(bool force)

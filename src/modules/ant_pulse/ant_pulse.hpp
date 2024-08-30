@@ -63,6 +63,7 @@
 #include <uORB/topics/ant_pulse.h>
 #include <uORB/topics/ant_radio.h>
 #include <uORB/topics/ant_sensors.h>
+#include <uORB/topics/ant_vehicle_local_position.h>
 
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/action_request.h>
@@ -105,6 +106,7 @@
 #include <uORB/topics/takeoff_status.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/wind.h>
+#include <uORB/topics/vehicle_local_position.h>
 
 #include <algorithm>
 #include <iterator>

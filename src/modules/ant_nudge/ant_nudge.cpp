@@ -118,6 +118,11 @@ void AntNudge::run()
 {
 	PX4_INFO("Run() Loop....!");
 
+	// Instantiate various ant topic structures to be populated accordingly, below.
+	struct ant_nudge_ack_s ant_nudge_ack;
+	memset(&ant_nudge_ack, 0, sizeof(ant_nudge_ack));
+	orb_advert_t ant_nudge_ack_pub = orb_advertise(ORB_ID(ant_nudge_ack), &ant_nudge_ack);
+
 	// initialize parameters
 	parameters_update(true);
 
@@ -182,6 +187,7 @@ void AntNudge::run()
 			// Determine nudge operation to be carried out.
 			bool result = false;
 			int nudge_nav_type = ant_nudge_sub.get().nudge_nav_type;
+			ant_nudge_ack.nudge_nav_type = nudge_nav_type;
 			switch (nudge_nav_type)
 			{
 				case ant_nudge_s::NUDGE_NAV_TYPE_ARM : {
@@ -196,6 +202,7 @@ void AntNudge::run()
 
 				case ant_nudge_s::NUDGE_NAV_TYPE_TAKEOFF : {
 					result = takeoff(ant_nudge_sub.get().nnt_takeoff_altitude);
+					ant_nudge_ack.nnt_takeoff_altitude = ant_nudge_sub.get().nnt_takeoff_altitude;
 				}
 				break;
 
@@ -259,6 +266,8 @@ void AntNudge::run()
 								ts.position[2] = vehicle_local_position_sub.get().z;
 								ts.yaw = vehicle_local_position_sub.get().heading + ant_nudge_sub.get().nnt_turn_right_radians;
 
+								ant_nudge_ack.nnt_turn_right_radians = ant_nudge_sub.get().nnt_turn_right_radians;
+
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_TURN_LEFT == nudge_nav_type ) {
 
 								PX4_INFO("-- Turning Left --");
@@ -267,6 +276,8 @@ void AntNudge::run()
 								ts.position[1] = vehicle_local_position_sub.get().y;
 								ts.position[2] = vehicle_local_position_sub.get().z;
 								ts.yaw = vehicle_local_position_sub.get().heading - ant_nudge_sub.get().nnt_turn_left_radians;
+
+								ant_nudge_ack.nnt_turn_left_radians = ant_nudge_sub.get().nnt_turn_left_radians;
 
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_FORWARD == nudge_nav_type ) {
 
@@ -277,6 +288,8 @@ void AntNudge::run()
 								ts.position[2] = vehicle_local_position_sub.get().z;
 								ts.yaw = vehicle_local_position_sub.get().heading;
 
+								ant_nudge_ack.nnt_forward_distance = ant_nudge_sub.get().nnt_forward_distance;
+
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_BACKWARD == nudge_nav_type ) {
 
 								PX4_INFO("-- Backward --");
@@ -285,6 +298,8 @@ void AntNudge::run()
 								ts.position[1] = (vehicle_local_position_sub.get().y - ant_nudge_sub.get().nnt_backward_distance) * sin(vehicle_local_position_sub.get().heading);
 								ts.position[2] = vehicle_local_position_sub.get().z;
 								ts.yaw = vehicle_local_position_sub.get().heading;
+
+								ant_nudge_ack.nnt_backward_distance = ant_nudge_sub.get().nnt_backward_distance;
 
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_UP == nudge_nav_type ) {
 
@@ -295,6 +310,8 @@ void AntNudge::run()
 								ts.position[2] = vehicle_local_position_sub.get().z - ant_nudge_sub.get().nnt_up_distance;
 								ts.yaw = vehicle_local_position_sub.get().heading;
 
+								ant_nudge_ack.nnt_up_distance = ant_nudge_sub.get().nnt_up_distance;
+
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_DOWN == nudge_nav_type ) {
 
 								PX4_INFO("-- Down --");
@@ -303,6 +320,8 @@ void AntNudge::run()
 								ts.position[1] = vehicle_local_position_sub.get().y;
 								ts.position[2] = vehicle_local_position_sub.get().z + ant_nudge_sub.get().nnt_down_distance;
 								ts.yaw = vehicle_local_position_sub.get().heading;
+
+								ant_nudge_ack.nnt_down_distance = ant_nudge_sub.get().nnt_down_distance;
 
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_RIGHT == nudge_nav_type ) {
 
@@ -313,6 +332,8 @@ void AntNudge::run()
 								ts.position[2] = vehicle_local_position_sub.get().z;
 								ts.yaw = vehicle_local_position_sub.get().heading;
 
+								ant_nudge_ack.nnt_right_distance = ant_nudge_sub.get().nnt_right_distance;
+
 							} else if ( ant_nudge_s::NUDGE_NAV_TYPE_LEFT == nudge_nav_type ) {
 
 								PX4_INFO("-- Left --");
@@ -321,6 +342,8 @@ void AntNudge::run()
 								ts.position[1] = vehicle_local_position_sub.get().y;
 								ts.position[2] = vehicle_local_position_sub.get().z;
 								ts.yaw = vehicle_local_position_sub.get().heading;
+
+								ant_nudge_ack.nnt_left_distance = ant_nudge_sub.get().nnt_left_distance;
 							}
 
 							uORB::Publication<trajectory_setpoint_s> ts_pub { ORB_ID(trajectory_setpoint) };
@@ -331,9 +354,6 @@ void AntNudge::run()
 
 						// Revert back to a loitering state.
 						send_vehicle_command(vehicle_command_s::VEHICLE_CMD_DO_SET_MODE, 1, 4, 3);
-
-					} else {
-						// TODO: Nudge Response.
 					}
 				}
 				break;
@@ -344,6 +364,14 @@ void AntNudge::run()
 
 			PX4_INFO("nudge_result: %i", result);
 
+			// Publish acknowledgement and result for recent nudge.
+			ant_nudge_ack.timestamp = hrt_absolute_time();
+			ant_nudge_ack.ant_system_id = ant_nudge_sub.get().ant_system_id;
+			ant_nudge_ack.nudge_system_id = ant_nudge_sub.get().nudge_system_id;
+			ant_nudge_ack.nudge_origin = ant_nudge_sub.get().nudge_origin;
+			ant_nudge_ack.nudge_ack_result = result ? ant_nudge_ack_s::NUDGE_ACK_RESULT_SUCCESS : ant_nudge_ack_s::NUDGE_ACK_RESULT_FAILED;
+
+			orb_publish(ORB_ID(ant_nudge_ack), ant_nudge_ack_pub, &ant_nudge_ack);
 		}
 
 		// Find latest command acknowledgements.

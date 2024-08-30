@@ -68,10 +68,12 @@ set(msg_files
 	AntLights.msg
 	AntLogs.msg
 	AntNudge.msg
+	AntNudgeAck.msg
 	AntPower.msg
 	AntPulse.msg
 	AntRadio.msg
 	AntSensors.msg
+	AntVehicleLocalPosition.msg
 	ArmingCheckReply.msg
 	ArmingCheckRequest.msg
 	AutotuneAttitudeControlStatus.msg
